@@ -270,6 +270,18 @@ static int is_btusb_device (struct libusb_device *dev)
     if (r < 0)
         return FALSE;
 
+    USBDBG("%s: bus_number = %03d, device_address = %03d, vendor = %x, product = %x, "
+           "class = %x, sub class = %d, protocol = %d",
+           __FUNCTION__,
+           libusb_get_bus_number(dev),
+           libusb_get_device_address(dev),
+           desc.idVendor,
+           desc.idProduct,
+           desc.bDeviceClass,
+           desc.bDeviceSubClass,
+           desc.bDeviceProtocol
+           );
+
     match = 0;
 
     for (id = btusb_table; id->bDevClass; id++)
@@ -326,6 +338,7 @@ static libusb_device_handle *libusb_open_bt_device()
     }
     for (i = 0; (dev = devs[i]) != NULL; i++)
     {
+        USBDBG("%s: i = %d", __FUNCTION__, i);
         if (is_btusb_device (dev) == TRUE)
             break;
     }
@@ -345,6 +358,13 @@ static libusb_device_handle *libusb_open_bt_device()
     }
 
     libusb_free_device_list(devs, 1);
+
+    r = libusb_kernel_driver_active(handle, 0);
+    if (r == 1) {
+        r = libusb_detach_kernel_driver(handle, 0);
+        ALOGD("libusb_detach_kernel_driver = %d", r);
+    }
+
     r = libusb_claim_interface(handle, 0);
     if (r < 0)
     {
